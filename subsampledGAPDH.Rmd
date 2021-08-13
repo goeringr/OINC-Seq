@@ -1,0 +1,256 @@
+---
+title: "subsampling read depth"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set
+library(tidyverse)
+library(ggpubr)
+library(cowplot)
+```
+
+```{r, }
+utrrates <- bind_rows("InVivo_mDBF_0.5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_0.5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_0.5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_0.5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_0.5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_0.5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_0.5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_0.5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_0.5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_0.5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_0.5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_0.5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_1_1" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_1K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_1_2" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_1K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_1_3" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_1K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_1_1" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_1K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_1_2" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_1K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_1_3" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_1K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_10_1" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_10K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_10_2" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_10K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_10_3" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_10K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_10_1" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_10K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_10_2" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_10K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_10_3" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_10K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_2.5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_2.5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_2.5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_2.5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_2.5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_2.5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_2.5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_2.5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_2.5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_2.5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_2.5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_2.5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_7.5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_7.5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_7.5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_7.5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_7.5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_7.5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_7.5_1" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_7.5K_1_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_7.5_2" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_7.5K_2_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_7.5_3" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_7.5K_3_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), .id = "sample")
+
+tidy_rates <- utrrates %>% separate(sample, into = c("InVivo", "DBF", "num_reads", "rep"), sep = "_") %>% select(-InVivo, -Strand, -Name, -Chr, -Start, -End) %>% gather(-DBF, -num_reads, -rep,-ReadCount, key = mut, value = rate)
+
+```
+
+```{r, }
+tidy_rates %>% mutate(num_reads = as.numeric(num_reads)) %>% ggline(x = "num_reads", y = "rate", group = "DBF", col = "DBF", add = "mean", plot_type = "b", facet.by = "mut", scales = "free_y", ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 5, label = "p.signif", method = "t.test", hide.ns = TRUE) + stat_summary(aes(x=num_reads,y=rate, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_cl_normal, fun.args=list(conf.int=0.95),alpha = 0.2,color = NA) + theme(legend.position = "top")
+
+tidy_rates %>% filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>% mutate(num_reads = as.numeric(num_reads)/2) %>% ggline(x = "num_reads", y = "rate", group = "DBF", col = "DBF", add = "mean", plot_type = "b", ylab = "number conversions", xlab = "number reads (x1000)", facet.by = "mut", nrow = 4, scales = "free") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", method = "t.test", hide.ns = TRUE, label.y.npc = 0.75) + stat_summary(aes(x=num_reads,y=rate, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white")) + theme(legend.position = "top")
+
+#add muts together (G_C + G_T)
+#how many reads to get 10K genes above 3.5k counts
+
+```
+
+```{r, }
+sum_pairs <- function(conv, mut_counts){
+  names(mut_counts) <- conv
+  paired_mut_counts<- mut_counts %>% combn(.,2,sum)
+  names(paired_mut_counts) <- names(mut_counts) %>% combn(., 2, paste0, collapse="+")
+  return(paired_mut_counts)
+}
+
+tidy_rates %>%
+    filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>% 
+    group_by(DBF,num_reads,rep) %>% 
+    summarise(pairs = as.list(sum_pairs(mut,rate))) %>% 
+    unnest(pairs, .id = "paired_muts") %>% 
+    mutate(signal = ifelse(paired_muts %in% c("G_C+G_T",  "G_T+G_C"), "G_C + G_T", "All Other Pair Combos"),
+           num_reads = as.numeric(num_reads)) %>% 
+    ungroup() %>% 
+    ggline(x = "num_reads", y = "pairs", group = "DBF", add = "mean", plot_type = "b", facet.by = "signal", col = "DBF", ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", label.y.npc = 0.5, method = "t.test", hide.ns = TRUE) + stat_summary(aes(x=num_reads,y=pairs, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white"))
+
+tidy_rates %>%
+    filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>% 
+    group_by(DBF,num_reads,rep) %>% 
+    summarise(pairs = as.list(sum_pairs(mut,rate))) %>% 
+    unnest(pairs, .id = "paired_muts") %>% 
+    mutate(signal = ifelse(paired_muts %in% c("G_C+G_T",  "G_T+G_C"), "G_C + G_T", "All Other Pair Combos"),
+           num_reads = as.numeric(num_reads)) %>% 
+    ungroup() %>% 
+    ggline(x = "num_reads", y = "pairs", group = "DBF", add = "mean", plot_type = "b", facet.by = "signal", col = "DBF", ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", label.y.npc = 0.5, method = "t.test", hide.ns = TRUE) + stat_summary(aes(x=num_reads,y=pairs, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white"))
+  
+```
+
+##add more reps
+
+```{r, }
+more_utrrates <- bind_rows("InVivo_mDBF_0.5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_0.5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_0.5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_0.5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_0.5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_0.5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_0.5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_0.5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_0.5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_0.5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_0.5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_0.5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_1_4" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_1K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_1_5" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_1K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_1_6" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_1K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_1_4" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_1K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_1_5" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_1K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_1_6" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_1K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_10_4" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_10K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_10_5" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_10K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_10_6" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_10K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_10_4" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_10K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_10_5" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_10K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_10_6" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_10K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_2.5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_2.5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_2.5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_2.5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_2.5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_2.5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_2.5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_2.5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_2.5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_2.5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_2.5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_2.5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          
+          "InVivo_mDBF_7.5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_7.5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_mDBF_7.5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_7.5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_mDBF_7.5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_mDBF.sorted_filtered_7.5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_7.5_4" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_7.5K_4_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "InVivo_pDBF_7.5_5" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_7.5K_5_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "InVivo_pDBF_7.5_6" = as_tibble(read.csv("subsample_utrrates/InVivo_pDBF.sorted_filtered_7.5K_6_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), .id = "sample")
+
+all_rates <- rbind(utrrates, more_utrrates) %>% separate(sample, into = c("InVivo", "DBF", "num_reads", "rep"), sep = "_") %>% select(-InVivo, -Strand, -Name, -Chr, -Start, -End) %>% gather(-DBF, -num_reads, -rep,-ReadCount, key = mut, value = rate)
+
+```
+
+```{r, }
+all_rates %>% filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>% mutate(num_reads = as.numeric(num_reads)) %>% ggline(x = "num_reads", y = "rate", group = "DBF", col = "DBF", add = "mean", plot_type = "b", ylab = "number conversions", xlab = "number reads (x1000)", facet.by = "mut", nrow = 4, scales = "free_y") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", method = "t.test", hide.ns = TRUE, label.y.npc = 0.75) + stat_summary(aes(x=num_reads,y=rate, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white")) + theme(legend.position = "top")
+
+r3 <- all_rates %>% filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>% mutate(num_reads = as.numeric(num_reads)/2, num_reps = "3 reps") %>% filter(rep %in% c(1:3))
+r4 <- all_rates %>% filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>%mutate(num_reads = as.numeric(num_reads)/2, num_reps = "4 reps") %>% filter(rep %in% c(1:4))
+r5 <- all_rates %>% filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>%mutate(num_reads = as.numeric(num_reads)/2, num_reps = "5 reps") %>% filter(rep %in% c(1:5))
+r6 <- all_rates %>% filter(mut %in% c("A_C","A_G","A_T","C_A","C_G","C_T","G_A","G_C","G_T","T_A","T_G","T_C")) %>%mutate(num_reads = as.numeric(num_reads)/2, num_reps = "6 reps") %>% filter(rep %in% c(1:6))
+
+bind_rows(r3,r4,r5,r6) %>% filter(mut %in% c("G_C", "G_T")) %>% ggline(x = "num_reads", y = "rate", group = "DBF", col = "DBF", add = "mean", plot_type = "b", facet.by = c("mut", "num_reps"), scales = "free_y", nrow = 2, ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", method = "t.test", hide.ns = TRUE, label.y.npc = 0.75) + stat_summary(aes(x=num_reads,y=rate, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white")) + theme(legend.position = "top") 
+
+bind_rows(r3,r4,r5,r6) %>% mutate(signal = ifelse(mut == "G_C", "G_C", ifelse(mut == "G_T", "G_T", "All others"))) %>% ggline(x = "num_reads", y = "rate", group = "DBF", col = "DBF", add = "mean", plot_type = "b", ylab = "number conversions", xlab = "number reads (x1000)", facet.by = c("signal", "num_reps"), scales = "free_y", nrow = 3) + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", method = "t.test", hide.ns = TRUE, label.y.npc = 0.75) + stat_summary(aes(x=num_reads,y=rate, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white")) + theme(legend.position = "top")
+
+
+
+bind_rows(r3,r4,r5,r6) %>% 
+    group_by(DBF,num_reads,rep,num_reps) %>% 
+    summarise(pairs = as.list(sum_pairs(mut,rate))) %>% 
+    unnest(pairs, .id = "paired_muts") %>% 
+    mutate(signal = ifelse(paired_muts %in% c("G_C+G_T",  "G_T+G_C"), "G_C + G_T", "All Other Pair Combos"),
+           num_reads = as.numeric(num_reads)) %>% 
+    ungroup() %>% 
+    ggline(x = "num_reads", y = "pairs", group = "DBF", add = "mean", plot_type = "b", facet.by = c("signal", "num_reps"), col = "DBF", ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif", label.y.npc = 0.5, method = "t.test", hide.ns = TRUE) + stat_summary(aes(x=num_reads,y=pairs, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl, alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white"))
+
+
+```
+
+```{r, HeLa data}
+HeLa_utrrates <- bind_rows("R1" = as_tibble(read.csv("HeLa_public_utrrates/HeLa_SLAM_R1_mapped.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")),
+          "R2" = as_tibble(read.csv("HeLa_public_utrrates/HeLa_SLAM_R2_mapped.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), 
+          "R3" = as_tibble(read.csv("HeLa_public_utrrates/HeLa_SLAM_R3_mapped.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")), .id = "sample")
+
+t2g <- as_tibble(readRDS("/Users/raegoering/Documents/TaliaferroLab/ABHaLoSeq/t2g.txt"))
+
+HeLa_counts <- HeLa_utrrates %>% mutate(Name = substr(Name, 1, nchar(Name)-9)) %>% left_join(., t2g, by = c("Name" = "target_id")) %>% select(Name,ensembl_gene_id,ext_gene,ReadCount,-Chr,-Start, -End, -Strand, everything()) %>% group_by(sample, ensembl_gene_id) %>% summarise(ReadCount = sum(ReadCount))
+
+
+### these samples have 70-80 M reads per rep
+### about 10,000 genes are adequately detected (Reads > 100)
+HeLa_counts %>% group_by(sample) %>% summarise(sum(ReadCount))
+HeLa_counts %>% filter(ReadCount > 5) %>% group_by(sample) %>% summarise(n())
+
+HeLa_est <- HeLa_counts  %>% mutate("3 reps" = ifelse(sample == "R1", ReadCount * (1/(70415272/66666667)),
+                       ifelse(sample == "R2", ReadCount * (1/(71678217/66666667)),
+                       ifelse(sample == "R3", ReadCount * (1/(81405028/66666667)))))) %>% 
+  mutate("4 reps" = ifelse(sample == "R1", ReadCount * (1/(70415272/50000000)),
+                       ifelse(sample == "R2", ReadCount * (1/(71678217/50000000)),
+                       ifelse(sample == "R3", ReadCount * (1/(81405028/50000000)))))) %>% 
+mutate("5 reps" = ifelse(sample == "R1", ReadCount * (1/(70415272/40000000)),
+                       ifelse(sample == "R2", ReadCount * (1/(71678217/40000000)),
+                       ifelse(sample == "R3", ReadCount * (1/(81405028/40000000)))))) %>% 
+mutate("6 reps" = ifelse(sample == "R1", ReadCount * (1/(70415272/33333333)),
+                       ifelse(sample == "R2", ReadCount * (1/(71678217/33333333)),
+                       ifelse(sample == "R3", ReadCount * (1/(81405028/33333333))))))
+
+gene_nums <- HeLa_est %>% select(-ReadCount) %>% gather(-sample,-ensembl_gene_id, key = num_reps, value = ReadCount) %>% group_by(sample,num_reps) %>% summarise("0.25"=sum(ReadCount > 250), "0.5"=sum(ReadCount > 500), "1.25"=sum(ReadCount > 1250), "2.5"=sum(ReadCount > 2500), "3.75"=sum(ReadCount > 3750), "5"=sum(ReadCount > 5000)) %>% gather(-sample,-num_reps, key = num_reads, value = num_genes) %>% group_by(num_reps,num_reads) %>% summarise(num_genes = mean(num_genes))
+
+# how many genes are expressed above 100 for each estimate:
+HeLa_est %>% select(-ReadCount) %>% gather(-sample,-ensembl_gene_id, key = num_reps, value = ReadCount) %>% group_by(sample,num_reps) %>% summarise(tot_genes = sum(ReadCount > 100)) %>% group_by(num_reps) %>% summarise(mean(tot_genes))
+
+gene_pct <- gene_nums %>% mutate(pct_genes = ifelse(num_reps == "3 reps", num_genes / 9722,
+                                             ifelse(num_reps == "4 reps", num_genes / 9242,
+                                             ifelse(num_reps == "5 reps", num_genes / 8837,
+                                             ifelse(num_reps == "6 reps", num_genes / 8464)))))
+
+bind_rows(r3,r4,r5,r6) %>% 
+    group_by(DBF,num_reads,rep,num_reps) %>% 
+    summarise(pairs = as.list(sum_pairs(mut,rate))) %>% 
+    unnest(pairs, .id = "paired_muts") %>% 
+    mutate(signal = ifelse(paired_muts %in% c("G_C+G_T",  "G_T+G_C"), "G_C + G_T", "All Other Pair Combos"),
+           num_reads = as.numeric(num_reads)) %>% 
+    ungroup() %>% 
+    filter(signal == "G_C + G_T") %>% 
+    ggline(x = "num_reads", y = "pairs", group = "DBF", add = "mean", plot_type = "b", facet.by = "num_reps", nrow = 1, col = "DBF", ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif",  method = "t.test", hide.ns = TRUE) + stat_summary(aes(x=num_reads,y=pairs, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl,fun.args = list(mult = 1), alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white")) + geom_text(aes(x=num_reads, y = -10, label = paste(round(num_genes,0), "\n", round(pct_genes, 2)*100, "%", sep = "")), data = gene_pct)
+
+```
+
+```{r, }
+allr3 <- all_rates %>% mutate(num_reads = as.numeric(num_reads)/2, num_reps = "3 reps") %>% filter(rep %in% c(1:3))
+allr4 <- all_rates %>% mutate(num_reads = as.numeric(num_reads)/2, num_reps = "4 reps") %>% filter(rep %in% c(1:4))
+allr5 <- all_rates %>% mutate(num_reads = as.numeric(num_reads)/2, num_reps = "5 reps") %>% filter(rep %in% c(1:5))
+allr6 <- all_rates %>% mutate(num_reads = as.numeric(num_reads)/2, num_reps = "6 reps") %>% filter(rep %in% c(1:6))
+bind_rows(allr3,allr4,allr5,allr6)  %>% 
+    filter(mut %in% c("G_C", "G_G", "G_T", "G_A")) %>% 
+    spread(mut,rate) %>%
+    mutate(allG = sum(G_A,G_C,G_G,G_T),
+           GCR = (G_C+G_T)/allG)  %>% 
+    ggline(x = "num_reads", y = "GCR", group = "DBF", add = "mean", plot_type = "b", facet.by = "num_reps", nrow = 1, col = "DBF", ylab = "number conversions", xlab = "number reads (x1000)") + theme_cowplot() + stat_compare_means(aes(group = DBF), size = 8, label = "p.signif",  method = "t.test", hide.ns = TRUE) + stat_summary(aes(x=num_reads,y=GCR, fill = DBF, color = DBF, group=DBF), geom="ribbon", fun.data = mean_sdl,fun.args = list(mult = 1), alpha = 0.2,color = NA) + scale_color_manual(values = c("#bf8799", "#558ec7")) + theme(strip.background = element_rect(color = "white", fill = "white"))  + geom_text(aes(x=num_reads, y = -0.0000005, label = paste(round(num_genes,0), "\n", round(pct_genes, 2)*100, "%", sep = "")), data = gene_pct)
+```
+
+
+```{r, models}
+dat <- bind_rows(r3,r4,r5,r6) %>% 
+    group_by(DBF,num_reads,rep,num_reps) %>% 
+    summarise(pairs = as.list(sum_pairs(mut,rate))) %>% 
+    unnest(pairs, .id = "paired_muts") %>% 
+    mutate(signal = ifelse(paired_muts %in% c("G_C+G_T",  "G_T+G_C"), "G_C + G_T", "All Other Pair Combos"),
+           num_reads = as.numeric(num_reads)) %>% 
+    ungroup() %>% filter(signal == "G_C + G_T")
+
+models <- plyr::dlply(dat, c("DBF", "num_reps"), function(df) 
+  lm(num_reads ~ pairs, data = df))
+
+plyr::ldply(models, coef) %>% as_tibble() %>% mutate(read_per_rep = 400000000 / (as.numeric(substr(num_reps,1,1))*2))
+
+
+```
+
+

@@ -1,0 +1,292 @@
+---
+title: "GAPDH_fastqNTcount"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggpubr)
+library(cowplot)
+```
+
+```{r, }
+#InVitro_pDBF <- as_tibble(read.table("InVitro_pDBF_NTcounts.txt", header = TRUE, sep = "\t")) %>% unique()
+#InVitro_mDBF <- as_tibble(read.table("InVitro_mDBF_NTcounts.txt", header = TRUE, sep = "\t")) %>% unique()
+#InVivo_pDBF <- as_tibble(read.table("InVivo_pDBF_NTcounts.txt", header = TRUE, sep = "\t")) %>% unique()
+#InVivo_mDBF <- as_tibble(read.table("InVivo_mDBF_NTcounts.txt", header = TRUE, sep = "\t")) %>% unique()
+
+#cts <- bind_rows(list("InVitro_pDBF" = InVitro_pDBF, "InVitro_mDBF" = InVitro_mDBF, "InVivo_pDBF" = InVivo_pDBF, "InVivo_mDBF" = InVivo_mDBF))
+
+#write.table(cts, "allNTcounts.txt")
+cts <- as_tibble(read.table("allNTcounts.txt"), header = TRUE)
+```
+
+```{r, }
+#freqs <- cts %>% rowwise() %>%  mutate(A = A/len, C = C/len, G = G/len, T = T/len)
+tidy_cts <- cts %>% gather(A,C,G,T, key = Nt, value = count)
+
+tidy_means <- cts %>% gather(A,C,G,T, key = Nt, value = count) %>% group_by(sample,Nt) %>% summarize(mean_cts = mean(count, na.rm = TRUE))
+
+stats <- cts %>% group_by(sample) %>% summarize(n=n(),mean_A = mean(A, na.rm = TRUE), mean_C = mean(C, na.rm = TRUE), mean_G = mean(G, na.rm = TRUE), mean_T = mean(T, na.rm = TRUE), med_A = median(A, na.rm = TRUE), med_C = median(C, na.rm = TRUE), med_G = median(G, na.rm = TRUE), med_T = median(T, na.rm = TRUE), sd_A = sd(A), sd_C = sd(C), sd_G = sd(G), sd_T = sd(T), .groups = "keep")
+
+
+med_dat <- cts %>% gather(A,C,G,T, key = Nt, value = count) %>% group_by(sample,Nt) %>% summarize(med_cts = median(count/len, na.rm = TRUE, )) %>% mutate(med_cts = round(med_cts, digits = 6))
+
+mean_dat <- cts %>% gather(A,C,G,T, key = Nt, value = count) %>% group_by(sample,Nt) %>% summarize(mean_cts = mean(count/len, na.rm = TRUE, )) %>% mutate(mean_cts = round(mean_cts, digits = 6))
+
+tidy_cts %>% ggplot(aes(x = sample, y = count/len, fill = sample)) + geom_boxplot(outlier.shape = NA) + theme_cowplot() + facet_wrap(.~Nt, scales = "free_y") + guides(fill = FALSE) + geom_text(data = mean_dat, aes(x = sample, y = mean_cts + 0.1, label = mean_cts), size = 2, vjust = -1.5) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "") + stat_compare_means(aes(label=..p.adj..), comparisons = list(c("InVitro_pDBF", "InVitro_mDBF"), c("InVivo_pDBF", "InVivo_mDBF")), method = "wilcox.test", p.adjust.method = "BH", label.y = c(mean(count/len)+0.2, mean(count/len)+0.2))
+
+
+cts %>% group_by(sample) %>% summarise(sum_A = sum(A), sum_T = sum(T), sum_G = sum(G), sum_C = sum(C), n = n()) %>% gather(-sample,-n, key= Nt, value = sums) %>% ggplot(aes(x = sample, y = sums/(n*136), col = sample)) + geom_point() + theme_cowplot() + facet_wrap(.~Nt, scales = "free_y") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + guides(col = FALSE) + labs(x = "", y = "NT/base")
+
+cts %>% group_by(sample) %>% summarise(sum_A = sum(A), sum_T = sum(T), sum_G = sum(G), sum_C = sum(C), n = n()) %>% gather(-sample,-n, key= Nt, value = sums) %>% ggplot(aes(x = sample, y = sums/n, col = sample)) + geom_point() + theme_cowplot() + facet_wrap(.~Nt, scales = "free_y") + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + guides(col = FALSE) + labs(x = "", y = "NT/read")
+
+```
+
+```{r, }
+cts %>% group_by(sample) %>% summarize(n_UMI = n_distinct(UMI), total = n())
+
+mut <- cts %>% mutate(Gmut = ifelse(G < 33, 33-G,0), Cmut = ifelse(C < 50, 50-C,0), Tmut = ifelse(T < 28, 28-T,0), Amut = ifelse(A < 25, 25-A,0)) %>% group_by(sample) %>% summarise(Gmut = sum(Gmut), Amut = sum(Amut), Tmut = sum(Tmut), Cmut = sum(Cmut))
+
+mut %>% mutate(tot = Gmut + Cmut + Amut + Tmut) %>% gather(Gmut,Cmut,Amut,Tmut, key = mut, value = cts) %>% ggplot(aes(x = sample, y = cts/tot, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~mut)
+
+mut <- cts %>% mutate(Gmut = G-33, Cmut = C-50, Tmut =T-28, Amut = A-25) %>% group_by(sample) %>% summarise(Gmut = sum(Gmut), Amut = sum(Amut), Tmut = sum(Tmut), Cmut = sum(Cmut), n = n())
+mut %>% gather(Gmut,Cmut,Amut,Tmut, key = mut, value = cts) %>% ggplot(aes(x = sample, y = cts/n, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~mut)
+
+
+Gmut <- cts %>% filter(G < 33) %>% mutate(G_T = ifelse(T > 28,T-28,0), G_A = ifelse(A > 25, A-25,0), G_C = ifelse(C > 50,C-50,0)) %>% group_by(sample) %>% summarise(G_T = sum(G_T), G_A = sum(G_A), G_C = sum(G_C))
+
+Gmut %>% mutate(tot = G_T + G_A + G_C) %>% gather(G_T,G_A,G_C, key = mut, value = cts) %>% ggplot(aes(x = sample, y = cts/tot*100, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~mut) + guides(fill = FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "", y = "Percent G mutation")
+
+Cmut <- cts %>% filter(C < 50) %>% mutate(C_T = ifelse(T > 28,T-28,0), C_A = ifelse(A > 25,A-25,0), C_G = ifelse(G > 33,G-33,0)) %>% group_by(sample) %>% summarise(C_T = sum(C_T), C_A = sum(C_A), C_G = sum(C_G))
+
+Cmut %>% mutate(tot = C_T + C_A + C_G) %>% gather(C_T,C_A,C_G, key = mut, value = cts) %>% ggplot(aes(x = sample, y = cts/tot, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~mut)
+```
+
+```{r, slamdunk utrrates}
+Tm <- as_tibble(read.csv("InVitro_mDBF.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t"))
+Tp <- as_tibble(read.csv("InVitro_pDBF.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t"))
+Vm <- as_tibble(read.csv("InVivo_mDBF.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t"))
+Vp <- as_tibble(read.csv("InVivo_pDBF.sorted_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t"))
+
+mutrates <- bind_rows(Tm,Tp,Vm,Vp, .id = "sample")
+
+mutrates %>% mutate(sample = c("InVitro_neg", "InVitro_pos", "InVivo_neg", "InVivo_pos")) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% ggplot(aes(x = sample, y = rate, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scale = "free")
+
+mutrates %>% mutate(sample = c("InVitro_neg", "InVitro_pos", "InVivo_neg", "InVivo_pos")) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% separate(mut, into =c("ref", "read"), sep = "_") %>% ggplot(aes(x = sample, y = rate, fill = read)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~ref)
+
+#remaking slamdunk output plot?
+mutrates  %>% mutate(sample = c("InVitro_neg", "InVitro_pos", "InVivo_neg", "InVivo_pos"), sum_bases = sum(A_A,A_C,A_G,A_T,C_A,C_C,C_G,C_T,G_A,G_C,G_G,G_T,T_A,T_C,T_T,T_G)) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount,-sum_bases, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% ggplot(aes(x =sample, y = (rate/sum_bases)*100, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scales = "free_y", nrow = 4) + guides(fill = FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "", y = "% Conversion")
+
+mutrates  %>% mutate(sample = c("InVitro_neg", "InVitro_pos", "InVivo_neg", "InVivo_pos"), sum_bases = sum(A_A,A_C,A_G,A_T,C_A,C_C,C_G,C_T,G_A,G_C,G_G,G_T,T_A,T_C,T_T,T_G)) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount,-sum_bases, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% mutate(PC = (rate/sum_bases)*100) %>% select(sample, mut,PC) %>% separate(sample, into =c("IN", "DBF"), sep = "_") %>% spread(DBF, PC) %>% mutate(FC = pos/neg) %>% ggplot(aes(x = IN, y = log2(FC), fill = IN)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scales = "free_y", nrow = 4) + guides(fill = FALSE) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + labs(x = "", y = "Fold Change, log2")
+
+mutrates  %>% mutate(sample = c("InVitro_neg", "InVitro_pos", "InVivo_neg", "InVivo_pos"), sum_bases = sum(A_A,A_C,A_G,A_T,C_A,C_C,C_G,C_T,G_A,G_C,G_G,G_T,T_A,T_C,T_T,T_G)) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount,-sum_bases, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% mutate(PC = (rate/sum_bases)*100) %>% select(sample, mut,PC) %>% separate(sample, into =c("IN", "DBF"), sep = "_") %>% spread(DBF, PC) %>% mutate(FC = pos/neg) %>% ggplot(aes(x = mut, y = log2(FC), fill = IN)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~IN, scales = "free_y", nrow = 2) + guides(fill = FALSE)  + labs(x = "", y = "Fold Change, log2")
+
+```
+
+```{r, utrrates2}
+Tm_med <- tibble("sample" = "InVitro_mDBF","A>T"=0.0016117292973225708,	"A>G"=0.007179108348122286,	"A>C"=0.0005926334468205829,	"C>A"=0.0011531271435362294,	"C>G"=0.0007532331548357772,	"C>T"=0.004511042935220922,	"G>A"=0.03732729999215496,	"G>C"=0.0011168211710200953,	"G>T"=0.00504778909415289,	"T>A"=0.004333498799242212,	"T>G"=0.001735281761073101,	"T>C"=0.01707627291622541)
+Tp_med <- tibble("sample" = "InVitro_pDBF","A>T"=0.001481835678216127,	"A>G"=0.007276343144496467,	"A>C"=0.0005533654831796405,	"C>A"=0.0012350183380174197,	"C>G"=0.0007614398775746497,	"C>T"=0.004336492961309286,	"G>A"=0.03652521536041928,	"G>C"=0.001457055718775928,	"G>T"=0.005408112803507119,	"T>A"=0.004827781359173649,	"T>G"=0.001748506148375759,	"T>C"=0.01729846201337757)
+Vm_med <- tibble("sample" = "InVivo_mDBF","A>T"=0.0016264194056585253,	"A>G"=0.007054688651413637,	"A>C"=0.0006115391935091202,	"C>A"=0.0011366187561077724,	"C>G"=0.000757464982758256,	"C>T"=0.004443260941685944,	"G>A"=0.0346027361832822,	"G>C"=0.0010925296924642206,	"G>T"=0.004587065262105235,	"T>A"=0.0043865656242519395,	"T>G"=0.0015398585250956049,	"T>C"=0.016708499745425133)
+Vp_med <- tibble("sample" = "InVivo_pDBF","A>T"=0.0017815735786296798,	"A>G"=0.006455357558751593,	"A>C"=0.0005874346181912349,	"C>A"=0.0012147197960961534, "C>G"=0.0007898723534037212,	"C>T"=0.004498152898725863,	"G>A"=0.037670518533310215,	"G>C"=0.0072077418983168585,	"G>T"=0.02369127636954344,	"T>A"=0.005363213361139498,	"T>G"=0.0014571257685914846,	"T>C"=0.017525260865264222)
+
+all_med <- bind_rows(Tm_med,Tp_med,Vm_med,Vp_med)
+
+all_med %>% gather(-sample, key = conversion, value = median) %>% ggplot(aes(x = sample, y = median, col = sample)) + geom_point() + theme_cowplot() + facet_wrap(.~conversion, scales = "free_y",nrow = 4)
+
+all_med %>% gather(-sample, key = conversion, value = median) %>% separate(sample, into = c("exp", "DBF"), sep = "_") %>% spread(DBF,median) %>% ggplot(aes(x = exp, y = pDBF/mDBF, fill = exp)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~conversion, scales = "free_y", nrow = 4)
+```
+
+
+```{r, slamdunk dump}
+#pd <- as_tibble(read.table("InVivo_pDBF.sorted_filtered_GAPDH_readinfo.sdunk", header = TRUE, sep = "\t"))
+#nd <- as_tibble(read.table("InVivo_mDBF.sorted_filtered_GAPDH_readinfo.sdunk", header = TRUE, sep = "\t"))
+
+##pd <- pd %>% separate(Name, into = c("Name", "UMI"), sep = "_") #%>% rowwise() %>%  filter(adist(UMI, "GGGGGGGGGGGGGGG")[1,1] > 4)
+#r1 = "ACAGTCCATGCCATCACTGC"
+#r2 = "GAGCTTGACAAAGTGGTCGT"
+
+CR2Muts <- function(CR){
+  y <- str_split(CR,";")[[1]]
+  n <- 1:(length(y)-1)
+  muts <- unlist(lapply(n, function(n) paste(str_split(y[n], ",")[[1]][2], str_split(y[n], ",")[[1]][6], sep = "_")))
+  return(list(muts))
+}
+
+# How many reads map perfectly to GAPDH (no conversions)
+# +DBF: (11226990-3415084)/11226990 69.5% of GAPDH mapped reads no conversions
+# -DBF: (9590384-2774692)/9590384 71% of GAPDH mapped reads no conversions
+
+
+# pd_cts <- pd %>%
+#   rowwise() %>%
+#   mutate(muts = ifelse(ConversionRates == "", list(""), CR2Muts(ConversionRates)),
+#          num_muts = length(muts),
+#          "G_T"= sum(muts %in% "G_T"),
+#          "G_A"= sum(muts %in% "G_A"),
+#          "G_C"= sum(muts %in% "G_C"),
+#          "C_T"= sum(muts %in% "C_T"),
+#          "C_A"= sum(muts %in% "C_A"),
+#          "C_G"= sum(muts %in% "C_G"),
+#          "A_T"= sum(muts %in% "A_T"),
+#          "A_G"= sum(muts %in% "A_G"),
+#          "A_C"= sum(muts %in% "A_C"),
+#          "T_A"= sum(muts %in% "T_A"),
+#          "T_C"= sum(muts %in% "T_C"),
+#          "T_G"= sum(muts %in% "T_G"),
+#           seq_length = nchar(Sequence)) %>%
+#   select(-Sequence,-Mismatches, -tcCount, -ConversionRates, -muts) %>%
+#   gather(-Name,-Direction,-num_muts,-seq_length, key = conversion, value = counts)
+
+# nd_cts <- nd %>%
+#   rowwise() %>%
+#   mutate(muts = ifelse(ConversionRates == "", list(""), CR2Muts(ConversionRates)),
+#          num_muts = length(muts),
+#          "G_T"= sum(muts %in% "G_T"),
+#          "G_A"= sum(muts %in% "G_A"),
+#          "G_C"= sum(muts %in% "G_C"),
+#          "C_T"= sum(muts %in% "C_T"),
+#          "C_A"= sum(muts %in% "C_A"),
+#          "C_G"= sum(muts %in% "C_G"),
+#          "A_T"= sum(muts %in% "A_T"),
+#          "A_G"= sum(muts %in% "A_G"),
+#          "A_C"= sum(muts %in% "A_C"),
+#          "T_A"= sum(muts %in% "T_A"),
+#          "T_C"= sum(muts %in% "T_C"),
+#          "T_G"= sum(muts %in% "T_G"),
+#           seq_length = nchar(Sequence)) %>%
+#   select(-Sequence,-Mismatches, -tcCount, -ConversionRates, -muts) %>%
+#   gather(-Name,-Direction,-num_muts,-seq_length, key = conversion, value = counts)
+     
+#saveRDS(pd_cts, "InVivo_pDBF_GAPDH_ConversionCounts.txt")
+#saveRDS(nd_cts, "InVivo_mDBF_GAPDH_ConversionCounts.txt")
+pd_cts <- readRDS("InVivo_pDBF_GAPDH_ConversionCounts.txt")
+nd_cts <- readRDS("InVivo_mDBF_GAPDH_ConversionCounts.txt")
+
+
+# How many reads with conversions have a G_C or G_T?
+# pd: (390298/3415084) 11% (35009/390298) 8.96% have both
+# nd: (218125/2774692) 7.8% (22959/218125) 10.5% have both
+
+#pd_cts %>% filter(conversion == "G_C" | conversion == "G_T") %>% filter(counts != 0 ) %>% pull(Name) %>% unique() %>% length()
+
+# 3.355% of reads have G_C or G_T in +   ## similar to what is seen with Biotin pull downs
+# 2.262% of reads have G_C or G_T in -  
+# thats a 1.48 fold increase
+
+pd_conv <- pd_cts %>% group_by(conversion) %>% summarise(n=n(), sum = sum(counts)) 
+nd_conv <- nd_cts %>% group_by(conversion) %>% summarise(n=n(), sum = sum(counts)) 
+
+bind_rows("+DBF" = pd_conv, "-DBF" = nd_conv, .id = "sample") %>% mutate(rateperread = sum/n) %>% ggplot(aes(x = sample, y = rateperread, fill = sample)) + geom_bar(stat = "identity", position = "dodge") + theme_cowplot() + facet_wrap(.~conversion, nrow = 4, scale = "free_y") + guides(fill = FALSE)
+
+bind_rows("+DBF" = pd_conv, "-DBF" = nd_conv, .id = "sample") %>% mutate(rateperread = sum/n) %>% select(-n,-sum) %>% spread(sample,rateperread) %>% mutate(norm_mDBF = 1, norm_pDBF = `+DBF`/`-DBF`) %>% gather(norm_mDBF, norm_pDBF, key = sample, value = norm_rateperread) %>% ggplot(aes(x = sample, y = norm_rateperread, fill = sample)) + geom_bar(stat = "identity", position = "dodge") + theme_cowplot() + facet_wrap(.~conversion, nrow = 4) + guides(fill = FALSE)
+
+#not so useful...
+med_conv <- bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% group_by(sample,conversion) %>% summarise(med = median(counts, na.rm = TRUE)) 
+
+
+
+#Wilcox.test on pos v neg
+
+bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% 
+  group_by(conversion) %>% 
+  do(w = wilcox.test(counts~sample, data=., paired=FALSE)) %>% 
+  summarise(conversion, Wilcox = w$p.value)
+        
+bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% ggplot(aes(x = sample, y = counts, fill = sample)) + geom_point() + geom_violin() + geom_boxplot() + theme_cowplot() + facet_grid(.~conversions) 
+                    
+```
+ sample n_reads n_muts `G_C/T`
+  <chr>    <int>  <int>   <int>
+1 -DBF   2774692      1  296945
+2 +DBF   3415084      1  500528
+
+mean conversion counts
+   conversion `-DBF` `+DBF`   Wilcox
+   <chr>       <dbl>  <dbl>   <dbl>
+ 1 A_C        0.199  0.210    1.77e-160
+ 2 A_G        0.0329 0.0285   5.51e-188
+ 3 A_T        0.100  0.0968   3.96e- 26
+ 4 C_A        0.115  0.114    9.84e-  1
+ 5 C_G        0.0314 0.0309    3.53e-  5
+ 6 C_T        0.0107 0.0104   1.80e-  5
+ 7 G_A        0.0342 0.0349   2.65e-  5
+ 8 G_C        0.0198 0.0304   0               #1.54x increase
+ 9 G_T        0.0872 0.116    0               #1.33x increase
+10 T_A        0.136  0.146    2.07e-120       
+11 T_C        0.702  0.684    0
+12 T_G        0.0832 0.0711   0
+
+```{r, mores sdunk stuff}
+bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% filter(counts > 0, conversion == "G_T" | conversion == "G_C") %>% group_by(sample,conversion,counts) %>% summarise(n=n()) %>% spread(sample,n)
+
+bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% filter(counts > 0) %>% ggplot(aes(x = counts, fill = sample)) + geom_bar(aes(y = ..count.. / sum(..count..)), position = "dodge") + theme_cowplot() + facet_wrap(.~conversion, nrow = 4, scales = "free") 
+
+bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% filter(conversion == "G_T" | conversion == "G_C") %>% select(-num_muts) %>% spread(conversion,counts) %>% ggplot(aes(x = G_C, y = G_T)) + geom_point() + geom_smooth(aes(x = G_C, y = G_T), method = lm, se = FALSE, inherit.aes = FALSE) + theme_cowplot() + stat_cor(method = "spearman") + facet_grid(.~sample) 
+
+cor_dat <- bind_rows("+DBF" = pd_cts, "-DBF" = nd_cts, .id = "sample") %>% 
+  spread(conversion,counts) %>% 
+  group_by(sample) %>% 
+  select(sample,Name,Direction,num_muts,G_C, everything()) %>% 
+  summarise(across(A_C:T_G, ~ cor(., G_C, method = "spearman")))
+```
+
+   conversion counts `-DBF` `+DBF`
+   <chr>       <int>  <int>  <int>
+ 1 G_C             1  44484  88434
+ 2 G_C             2   4074   6299
+ 3 G_C             3    615    797
+ 4 G_C             4     89    113
+ 5 G_C             5      7     13
+ 6 G_T             1 152689 277562
+ 7 G_T             2  30051  40181
+ 8 G_T             3   7302   9435
+ 9 G_T             4   1515   2046
+10 G_T             5    229    389
+11 G_T             6     28     36
+12 G_T             7      1      2
+
+```{r, single read slamdunk utrrates}
+Vp1 <- as_tibble(read.csv("processed.HeLa_NES_InVivo_pDBF_S16_L003_R1_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_pDBF_R1")
+Vp2 <- as_tibble(read.csv("processed.HeLa_NES_InVivo_pDBF_S16_L003_R2_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_pDBF_R2")
+Vm1 <- as_tibble(read.csv("processed.HeLa_NES_InVivo_mDBF_S17_L003_R1_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_mDBF_R1")
+Vm2 <- as_tibble(read.csv("processed.HeLa_NES_InVivo_mDBF_S17_L003_R2_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_mDBF_R2")
+Tp1 <- as_tibble(read.csv("processed.HeLa_NES_InVitro_pDBF_S18_L003_R1_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVitro_pDBF_R1")
+Tp2 <- as_tibble(read.csv("processed.HeLa_NES_InVitro_pDBF_S18_L003_R2_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVitro_pDBF_R2")
+Tm1 <- as_tibble(read.csv("processed.HeLa_NES_InVitro_mDBF_S19_L003_R1_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVitro_mDBF_R1")
+Tm2 <- as_tibble(read.csv("processed.HeLa_NES_InVitro_mDBF_S19_L003_R2_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVitro_mDBF_R2")
+
+mutrates_SR <- bind_rows(Tm1, Tm2,Tp1,Tp2,Vm1,Vm2,Vp1,Vp2)
+
+mutrates_SR %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% ggplot(aes(x = sample, y = rate, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scale = "free")
+
+mutrates_SR %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% separate(sample, into = c("In", "DBF","read")) %>% filter(In == "InVivo", read == "R1") %>% unite(In,DBF,read,col = "sample") %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% ggplot(aes(x = sample, y = rate, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut) + guides(fill = FALSE)
+
+mutrates_SR %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% separate(mut, into =c("ref", "read"), sep = "_") %>% ggplot(aes(x = sample, y = rate, fill = read)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~ref)
+
+#remaking slamdunk output plot?
+mutrates_SR  %>% mutate(sum_bases = sum(A_A,A_C,A_G,A_T,C_A,C_C,C_G,C_T,G_A,G_C,G_G,G_T,T_A,T_C,T_T,T_G)) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount,-sum_bases, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% ggplot(aes(x =sample, y = rate/sum_bases)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scales = "free", nrow = 4)
+
+```
+
+```{r, single read slamdunk utrrates no slam bias}
+Vm1 <- as_tibble(read.csv("noslamUTRrates/processed.HeLa_NES_InVivo_mDBF_S17_L003_R1_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_mDBF_R1")
+Vm2 <- as_tibble(read.csv("noslamUTRrates/processed.HeLa_NES_InVivo_mDBF_S17_L003_R2_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_mDBF_R2")
+Vp1 <- as_tibble(read.csv("noslamUTRrates/processed.HeLa_NES_InVivo_pDBF_S16_L003_R1_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_pDBF_R1")
+Vp2 <- as_tibble(read.csv("noslamUTRrates/processed.HeLa_NES_InVivo_pDBF_S16_L003_R2_001.fastq_slamdunk_mapped_filtered_mutationrates_utr.csv", skip = 2, header = TRUE, sep = "\t")) %>% mutate(sample = "InVivo_pDBF_R2")
+
+mutrates_SRNS <- bind_rows(Vm1,Vm2,Vp1,Vp2)
+
+mutrates_SRNS %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% ggplot(aes(x = sample, y = rate, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scale = "free")
+
+mutrates_SRNS %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% separate(sample, into = c("In", "DBF","read")) %>% filter(In == "InVivo", read == "R1") %>% unite(In,DBF,read,col = "sample") %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% ggplot(aes(x = sample, y = rate, fill = sample)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut) + guides(fill = FALSE)
+
+mutrates_SRNS %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% separate(mut, into =c("ref", "read"), sep = "_") %>% ggplot(aes(x = sample, y = rate, fill = read)) + geom_bar(stat = "identity") + theme_cowplot() + facet_grid(.~ref)
+
+#remaking slamdunk output plot?
+mutrates_SRNS  %>% mutate(sum_bases = sum(A_A,A_C,A_G,A_T,C_A,C_C,C_G,C_T,G_A,G_C,G_G,G_T,T_A,T_C,T_T,T_G)) %>% gather(-sample,-Name,-Chr,-Start,-End,-Strand,-ReadCount,-sum_bases, key = mut, value = rate) %>% mutate(conversion = ifelse(mut %in% c("A_A", "T_T", "C_C", "G_G", "A_N", "G_N", "T_N", "C_N", "N_N", "N_A", "N_G", "N_T", "N_C"), "no", "yes")) %>% filter(conversion == "yes") %>% ggplot(aes(x =sample, y = rate/sum_bases)) + geom_bar(stat = "identity") + theme_cowplot() + facet_wrap(.~mut, scales = "free", nrow = 4)
+
+```
+
+
